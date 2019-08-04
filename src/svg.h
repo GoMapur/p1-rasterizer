@@ -1,4 +1,4 @@
-// Original file Copyright CMU462 Fall 2015: 
+// Original file Copyright CMU462 Fall 2015:
 // Kayvon Fatahalian, Keenan Crane,
 // Sky Gao, Bryce Summers, Michael Choquette.
 #ifndef CGL_SVG_H
@@ -45,7 +45,7 @@ struct Style {
 
 struct SVGElement {
 
-  SVGElement( SVGElementType _type ) 
+  SVGElement( SVGElementType _type )
     : type( _type ), transform( Matrix3x3::identity() ) { }
 
   virtual ~SVGElement() { }
@@ -60,7 +60,7 @@ struct SVGElement {
 
   // transformation list
   Matrix3x3 transform;
-  
+
 };
 
 struct Triangle : SVGElement {
@@ -69,17 +69,17 @@ struct Triangle : SVGElement {
   Vector2D p0_svg, p1_svg, p2_svg;
 
   void draw(DrawRend *dr, Matrix3x3 global_transform);
-  virtual Color color(Vector3D p_bary, Vector3D p_dx_bary = Vector3D(), Vector3D p_dy_bary = Vector3D(), 
+  virtual Color color(Vector3D p_bary, Vector3D p_dx_bary = Vector3D(), Vector3D p_dy_bary = Vector3D(),
                         SampleParams sp = SampleParams()) = 0;
 };
 
-struct ColorTri : Triangle { 
+struct ColorTri : Triangle {
 
-  // Should return appropriate color given barycentric 
+  // Should return appropriate color given barycentric
   // coordinates x and y corresponding to vertices 'a' and 'b'.
-  // Ignore the dx and dy arguments -- they are for TexTri to 
+  // Ignore the dx and dy arguments -- they are for TexTri to
   // do trilinear filtering.
-  Color color(Vector3D p_bary, Vector3D p_dx_bary = Vector3D(), Vector3D p_dy_bary = Vector3D(), 
+  Color color(Vector3D p_bary, Vector3D p_dx_bary = Vector3D(), Vector3D p_dy_bary = Vector3D(),
                         SampleParams sp = SampleParams());
 
   // Per-vertex colors. Should be interpolated between using 
@@ -89,14 +89,14 @@ struct ColorTri : Triangle {
 
 struct TexTri : Triangle {
 
-  // Should return appropriate color given barycentric 
+  // Should return appropriate color given barycentric
   // coordinates x and y corresponding to vertices 'a' and 'b'.
   // Use the dx and dy arguments for mipmap
   // level selection in trilinear filtering.
-  Color color(Vector3D p_bary, Vector3D p_dx_bary = Vector3D(), Vector3D p_dy_bary = Vector3D(), 
+  Color color(Vector3D p_bary, Vector3D p_dx_bary = Vector3D(), Vector3D p_dy_bary = Vector3D(),
                         SampleParams sp = SampleParams());
 
-  // Per-vertex uv coordinates. 
+  // Per-vertex uv coordinates.
   // Should be interpolated between using barycentric coordinates.
   Vector2D p0_uv, p1_uv, p2_uv;
   Texture *tex;
@@ -124,7 +124,7 @@ struct Point : SVGElement {
 
 struct Line : SVGElement {
 
-  Line() : SVGElement ( LINE ) { }  
+  Line() : SVGElement ( LINE ) { }
   Vector2D from;
   Vector2D to;
 
@@ -168,7 +168,7 @@ struct Image : SVGElement {
   Texture tex;
 
   void draw(DrawRend *dr, Matrix3x3 global_transform);
-  
+
 };
 
 struct SVG {

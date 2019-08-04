@@ -7,12 +7,13 @@
 #include "CGL/lodepng.h"
 #include "texture.h"
 #include <ctime>
+#include <cmath>
+
 using namespace std;
 
 namespace CGL {
 
 struct SVG;
-
 
 DrawRend::~DrawRend( void ) {}
 
@@ -269,11 +270,11 @@ void DrawRend::write_screenshot() {
 void DrawRend::write_framebuffer() {
   // lodepng expects alpha channel, so we will just make a new vector with
   // alpha included
-  
+
   std::vector<unsigned char> export_data;
-  
+
   export_data.reserve(width * height * 4);
-  
+
   for (int y = 0; y < height; ++y) {
     for (int x = 0; x < width; ++x) {
       for (int k = 0; k < 3; ++k) {
@@ -282,7 +283,7 @@ void DrawRend::write_framebuffer() {
       export_data.push_back(255); // Opaque alpha
     }
   }
-  
+
   if (lodepng::encode("test.png", export_data.data(), width, height))
     cerr << "Could not write framebuffer" << endl;
   else
@@ -510,10 +511,65 @@ void DrawRend::rasterize_triangle( float x0, float y0,
   // Part 4: Add barycentric coordinates and use tri->color for shading when available.
   // Part 5: Fill in the SampleParams struct and pass it to the tri->color function.
   // Part 6: Pass in correct barycentric differentials to tri->color for mipmapping.
+  for (int i = floor( std::max({0.0f, std::min({x0, x1, x2})}) );
+           i < ceil( std::min({(float)width, std::max({x0, x1, x2})}) );
+           ++i) {
+    for (int j = floor( std::max({0.0f, std::min({y0, y1, y2})}) );
+             j < ceil( std::min({(float)height, std::max({y0, y1, y2})}) );
+             ++j) {
+      int subpixel_dimension = samplebuffer[j][i].samples_per_side;
+      for (int sample_x = 0; sample_x < subpixel_dimension; ++sample_x) {
+        for (int sample_y = 0; sample_y < subpixel_dimension; ++sample_y) {
+          float subpixel_shift_x = (float)(0.5+sample_x) / (float)subpixel_dimension;
+          float subpixel_shift_y = (float)(0.5+sample_y) / (float)subpixel_dimension;
+          float current_x = (float)i + subpixel_shift_x;
+          float current_y = (float)j + subpixel_shift_y;
+          if ( insideTriangle(x0, y0, x1, y1, x2, y2, current_x, current_y) ) {
+            if (!tri) {
+              samplebuffer[j][i].fill_color(sample_x, sample_y, color);
+            } else {
+              // See if mathematically can be improved
 
+              SampleParams sp = {Vector2D(0, 0), Vector2D(0, 0), Vector2D(0, 0), psm, lsm};
+              samplebuffer[j][i].fill_color(sample_x, sample_y,
+                                            tri->color(barycentric(x0, y0, x1, y1, x2, y2, current_x, current_y),
+                                            barycentric(x0, y0, x1, y1, x2, y2, current_x+1, current_y),
+                                            barycentric(x0, y0, x1, y1, x2, y2, current_x, current_y+1),
+                                            sp));
+            }
+          }
+        }
+      }
+    }
+  }
 
 }
 
+Vector3D DrawRend::barycentric(float x0, float y0,
+                     float x1, float y1,
+                     float x2, float y2,
+                     float current_x, float current_y) {
+  float alpha = (-1.0 * (current_x - x1) * (y2 - y1) + (current_y - y1) * (x2 - x1)) / (-1.0 * (x0 - x1) * (y2 - y1) + (y0 - y1) * (x2 - x1));
+  float beta = (-1.0 * (current_x - x2) * (y0 - y2) + (current_y - y2) * (x0 - x2)) / (-1.0 * (x1 - x2) * (y0 - y2) + (y1 - y2) * (x0 - x2));
+  float gamma = 1.0 - alpha - beta;
+  return Vector3D(alpha, beta, gamma);
+}
 
+bool DrawRend::insideTriangle(float x0, float y0,
+                              float x1, float y1,
+                              float x2, float y2,
+                              float x_test, float y_test) {
+  return lineTest(x0, y0, x1, y1, x2, y2, x_test, y_test) &&
+          lineTest(x0, y0, x2, y2, x1, y1, x_test, y_test) &&
+          lineTest(x1, y1, x2, y2, x0, y0, x_test, y_test);
+}
+
+bool DrawRend::lineTest(float x0, float y0,
+                        float x1, float y1,
+                        float x_other, float y_other,
+                        float x_test, float y_test) {
+  return (-(x_test - x0) * (y1 - y0) + (y_test - y0) * (x1 - x0)) *
+          (-(x_other - x0) * (y1 - y0) + (y_other - y0) * (x1 - x0)) >= 0;
+}
 
 }

@@ -9,29 +9,92 @@ namespace CGL {
 Color Texture::sample(const SampleParams &sp) {
   // Parts 5 and 6: Fill this in.
   // Should return a color sampled based on the psm and lsm parameters given
-  return Color();
+
+  if (sp.lsm == L_ZERO) {
+    return sample_level(sp.p_uv, 0, sp.psm);
+  }
+
+  float level = get_level(sp);
+  if (sp.lsm == L_NEAREST) {
+    int level = round(get_level(sp));
+    return sample_level(sp.p_uv, level, sp.psm);
+  } else if (sp.lsm == L_LINEAR) {
+    float level = get_level(sp);
+    int level1 = floor(level);
+    int level2 = ceil(level);
+    Color c1 = sample_level(sp.p_uv, level1, sp.psm);
+    Color c2 = sample_level(sp.p_uv, level2, sp.psm);
+    return c1 + (c2 - c1) * (level - level1) / (level2 - level1);
+  }
+
+}
+
+Color Texture::sample_level(Vector2D uv, int level, const PixelSampleMethod method) {
+  if (method == P_NEAREST) {
+    return sample_nearest(uv, level);
+  } else if (method == P_LINEAR) {
+    return sample_bilinear(uv, level);
+  }
 }
 
 float Texture::get_level(const SampleParams &sp) {
   // Optional helper function for Parts 5 and 6
-  return 0;
+  Vector2D dx = sp.p_dx_uv - sp.p_uv;
+  Vector2D scaled_dx = Vector2D(dx.x * width, dx.y * height);
+  Vector2D dy = sp.p_dy_uv - sp.p_uv;
+  Vector2D scaled_dy = Vector2D(dy.x * width, dy.y * height);
+  float l = std::max(scaled_dx.norm(), scaled_dy.norm());
+  return log2(l);
 }
 
 // Returns the nearest sample given a particular level and set of uv coords
 Color Texture::sample_nearest(Vector2D uv, int level) {
   // Optional helper function for Parts 5 and 6
   // Feel free to ignore or create your own
-  return Color();
+  MipLevel ml = mipmap[level];
+  int round_x = round(uv[0]*width/pow(2, level));
+  int round_y = round(uv[1]*height/pow(2, level));
+  return ml.get_texel(round_x, round_y);
 }
 
 // Returns the bilinear sample given a particular level and set of uv coords
 Color Texture::sample_bilinear(Vector2D uv, int level) {
   // Optional helper function for Parts 5 and 6
   // Feel free to ignore or create your own
-  return Color();
+  MipLevel ml = mipmap[level];
+
+  Vector2D scaled_uv = Vector2D(uv.x*width/pow(2, level), uv.y*height/pow(2, level));
+  Vector2D round_ru = Vector2D(round(uv.x*width/pow(2, level)), round(uv.y*height/pow(2, level)));
+
+  Vector2D lu = bounce(round_ru + Vector2D(-0.5, 0.5), level);
+  Vector2D rl = bounce(round_ru + Vector2D(0.5, -0.5), level);
+  Vector2D ll = bounce(round_ru + Vector2D(-0.5, -0.5), level);
+  Vector2D ru = bounce(round_ru + Vector2D(0.5, 0.5), level);
+
+  Color left_upper = ml.get_texel(floor(lu.x), floor(lu.y));
+  Color right_upper = ml.get_texel(floor(ru.x), floor(ru.y));
+  Color left_lower = ml.get_texel(floor(ll.x), floor(ll.y));
+  Color right_lower = ml.get_texel(floor(rl.x), floor(rl.y));
+
+  Color upper_lerp = linear_interpolate(left_upper, right_upper, lu, ru, Vector2D(scaled_uv.x, lu.y));
+  Color lower_lerp = linear_interpolate(left_lower, right_lower, ll, rl, Vector2D(scaled_uv.x, rl.y));
+  return linear_interpolate(lower_lerp, upper_lerp, Vector2D(scaled_uv.x, rl.y), Vector2D(scaled_uv.x, lu.y), scaled_uv);
 }
 
+Vector2D Texture::bounce(Vector2D vec, int level) {
+  float bounced_x = std::min({std::max({vec.x, 0.5}), width/pow(2, level) - 0.5});
+  float bounced_y = std::min({std::max({vec.y, 0.5}), height/pow(2, level) - 0.5});
+  return Vector2D(bounced_x, bounced_y);
+}
 
+Color Texture::linear_interpolate(Color c1, Color c2, Vector2D p1, Vector2D p2, Vector2D x) {
+  if (p1 == p2) {
+    return c1;
+  }
+  return c1 + (c2 - c1) * (x - p1).norm() / (p2 - p1).norm();
+}
+
+// Color Texture::lerp_color(Color a, Color b,
 
 /****************************************************************************/
 

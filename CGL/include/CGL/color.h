@@ -54,6 +54,10 @@ class Color {
     return Color( r + rhs.r, g + rhs.g, b + rhs.b);
   }
 
+  inline Color operator-( const Color& rhs ) const {
+    return Color( r - rhs.r, g - rhs.g, b - rhs.b);
+  }
+
   inline Color& operator+=( const Color& rhs ) {
     r += rhs.r; g += rhs.g; b += rhs.b;
     return *this;
@@ -72,6 +76,11 @@ class Color {
   // Scalar multiplication.
   inline Color operator*( float s ) const {
     return Color( r * s, g * s, b * s );
+  }
+
+  // Scalar multiplication.
+  inline Color operator/( float s ) const {
+    return Color( r / s, g / s, b / s );
   }
 
   inline Color& operator*=( float s ) {

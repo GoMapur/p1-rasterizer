@@ -47,7 +47,7 @@ void Triangle::draw(DrawRend *dr, Matrix3x3 global_transform) {
  */
 Color ColorTri::color(Vector3D p_bary, Vector3D p_dx_bary, Vector3D p_dy_bary, SampleParams sp) {
   // Part 4: Fill this in.
-  return Color();
+  return p0_col*p_bary[0]+p1_col*p_bary[1]+p2_col*p_bary[2];
 }
 
 /**
@@ -60,7 +60,10 @@ Color ColorTri::color(Vector3D p_bary, Vector3D p_dx_bary, Vector3D p_dy_bary, S
 Color TexTri::color(Vector3D p_bary, Vector3D p_dx_bary, Vector3D p_dy_bary, SampleParams sp) {
   // Part 5: Fill this in with bilinear sampling.
   // Part 6: Fill this in with trilinear sampling as well.
-  return Color();
+  sp.p_uv = p0_uv*p_bary[0] + p1_uv*p_bary[1] + p2_uv*p_bary[2];
+  sp.p_dx_uv = p0_uv*p_dx_bary[0] + p1_uv*p_dx_bary[1] + p2_uv*p_dx_bary[2];
+  sp.p_dy_uv = p0_uv*p_dy_bary[0] + p1_uv*p_dy_bary[1] + p2_uv*p_dy_bary[2];
+  return tex->sample(sp);
 }
 
 void Group::draw(DrawRend *dr, Matrix3x3 global_transform) {

@@ -45,6 +45,10 @@ class Vector2D {
     return ( &x )[ index ];
   }
 
+  inline bool operator==( const Vector2D& v) const {
+    return v.x == x && v.y == y;
+  }
+
   // additive inverse
   inline Vector2D operator-( void ) const {
     return Vector2D( -x, -y );

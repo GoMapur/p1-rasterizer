@@ -97,12 +97,15 @@ private:
     SampleBuffer(size_t sps): samples_per_side(sps) {
       clear();
     }
-    
+
     // Fill the subpixel at i,j with the Color c
     void fill_color(int i, int j, Color c) {
       PixelColorStorage &p = sub_pixels[i][j];
       // Part 1: Overwrite PixelColorStorage p using Color c.
       //         Pay attention to different data types.
+      p[0] = 255 * c.r;
+      p[1] = 255 * c.g;
+      p[2] = 255 * c.b;
       return;
     }
 
@@ -113,10 +116,21 @@ private:
     }
 
     Color get_pixel_color() {
-      return Color(sub_pixels[0][0].data());
       // Part 2: Implement get_pixel_color() for supersampling.
+      std::vector<long> acc(3, 0);
+      for (int i = 0; i < samples_per_side; ++i) {
+        for (int j = 0; j < samples_per_side; ++j) {
+          for (int channel = 0; channel < 3; ++channel) {
+            acc[channel] += (long)sub_pixels[i][j][channel];
+          }
+        }
+      }
+
+      return Color(acc[0]/(float)(samples_per_side*samples_per_side*255),
+                   acc[1]/(float)(samples_per_side*samples_per_side*255),
+                   acc[2]/(float)(samples_per_side*samples_per_side*255));
     }
-    
+
     void clear() {
       if (sub_pixels.size() == samples_per_side) {
         for (int i = 0; i < samples_per_side; ++i)
@@ -153,6 +167,20 @@ private:
     }
   }
 
+  Vector3D barycentric(float x0, float y0,
+                       float x1, float y1,
+                       float x2, float y2,
+                       float current_x, float current_y);
+
+  bool insideTriangle(float x0, float y0,
+                                float x1, float y1,
+                                float x2, float y2,
+                                float x_test, float y_test);
+
+  bool lineTest(float x0, float y0,
+                          float x1, float y1,
+                          float x_other, float y_other,
+                          float x_test, float y_test);
 
 };
 

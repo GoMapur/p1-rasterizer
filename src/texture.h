@@ -29,7 +29,10 @@ struct MipLevel {
   // RGB color values
   std::vector<unsigned char> texels;
 
-  Color get_texel(int tx, int ty);
+  Color get_texel(int tx, int ty) {
+    int base = 3 * (tx + ty * width);
+    return Color(&texels[base]);
+  }
 };
 
 struct Texture {
@@ -52,11 +55,17 @@ struct Texture {
   void generate_mips(int startLevel = 0);
 
   Color sample(const SampleParams &sp);
+  Color sample_level(Vector2D uv, int level, const PixelSampleMethod method);
   float get_level(const SampleParams &sp);
 
   Color sample_nearest(Vector2D uv, int level = 0);
 
   Color sample_bilinear(Vector2D uv, int level = 0);
+
+  Vector2D bounce(Vector2D vec, int level);
+
+  Color linear_interpolate(Color c1, Color c2, Vector2D p1, Vector2D p2, Vector2D x);
+
 };
 
 }
